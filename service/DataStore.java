@@ -1,6 +1,7 @@
 package service;
 
 import model.Admin;
+import model.Assignment;
 import model.Course;
 import model.CourseStatus;
 import model.Enrollment;
@@ -8,6 +9,7 @@ import model.Lesson;
 import model.LessonCompletion;
 import model.Role;
 import model.Student;
+import model.Submission;
 import model.Teacher;
 import model.User;
 
@@ -27,6 +29,8 @@ public class DataStore {
     private final List<Lesson> lessons = new ArrayList<>();
     private final List<Enrollment> enrollments = new ArrayList<>();
     private final List<LessonCompletion> completions = new ArrayList<>();
+    private final List<Assignment> assignments = new ArrayList<>();
+    private final List<Submission> submissions = new ArrayList<>();
 
     public DataStore(Path folder) {
         this.folder = folder;
@@ -53,6 +57,14 @@ public class DataStore {
         return completions;
     }
 
+    public List<Assignment> getAssignments() {
+        return assignments;
+    }
+
+    public List<Submission> getSubmissions() {
+        return submissions;
+    }
+
     // Makes user input safe to store: tabs and line breaks would break the file format
     public static String clean(String text) {
         return text == null ? "" : text.replaceAll("[\\t\\r\\n]+", " ").trim();
@@ -73,6 +85,15 @@ public class DataStore {
         }
         for (String[] row : read("completions.txt", 2)) {
             completions.add(new LessonCompletion(Integer.parseInt(row[0]), row[1]));
+        }
+        for (String[] row : read("assignments.txt", 6)) {
+            assignments.add(new Assignment(row[0], row[1], row[2], row[3], row[4], Integer.parseInt(row[5])));
+        }
+        for (String[] row : read("submissions.txt", 6)) {
+            Submission submission = new Submission(row[0], row[1], row[2], row[3]);
+            submission.setMarks(row[4].isEmpty() ? null : Integer.valueOf(row[4]));
+            submission.setFeedback(row[5]);
+            submissions.add(submission);
         }
 
         if (users.isEmpty()) {
@@ -114,6 +135,21 @@ public class DataStore {
             lines.add(join(String.valueOf(c.getLessonId()), c.getStudentUsername()));
         }
         write("completions.txt", lines);
+
+        lines = new ArrayList<>();
+        for (Assignment a : assignments) {
+            lines.add(join(a.getId(), a.getCourseCode(), a.getTitle(), a.getDescription(), a.getDueDate(),
+                    String.valueOf(a.getMaxMarks())));
+        }
+        write("assignments.txt", lines);
+
+        lines = new ArrayList<>();
+        for (Submission s : submissions) {
+            String marks = s.isGraded() ? String.valueOf(s.getMarks()) : "";
+            lines.add(join(s.getAssignmentId(), s.getStudentUsername(), s.getLink(), s.getSubmittedDate(),
+                    marks, s.getFeedback()));
+        }
+        write("submissions.txt", lines);
     }
 
     public static User createUser(Role role, String id, String name, String username, String password) {

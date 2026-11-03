@@ -8,6 +8,7 @@ public class Services {
     public final UserService users;
     public final CourseService courses;
     public final EnrollmentService enrollments;
+    public final AssignmentService assignments;
 
     public Services(Path dataFolder) {
         DataStore store = new DataStore(dataFolder);
@@ -15,5 +16,6 @@ public class Services {
         users = new UserService(store);
         courses = new CourseService(store);
         enrollments = new EnrollmentService(store, courses, users);
+        assignments = new AssignmentService(store, courses, enrollments);
     }
 }
