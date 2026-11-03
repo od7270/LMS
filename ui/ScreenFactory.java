@@ -5,7 +5,9 @@ import model.User;
 import service.Services;
 import ui.screens.ManageCoursesScreen;
 import ui.screens.ManageUsersScreen;
+import ui.screens.StudentAssignmentsScreen;
 import ui.screens.StudentCoursesScreen;
+import ui.screens.StudentGradesScreen;
 import ui.screens.TeacherAssignmentsScreen;
 import ui.screens.TeacherCoursesScreen;
 import ui.screens.TeacherGradingScreen;
@@ -18,6 +20,12 @@ public class ScreenFactory {
             case STUDENT:
                 if (menuItem.equals("My Courses")) {
                     return new StudentCoursesScreen(user, services);
+                }
+                if (menuItem.equals("Assignments")) {
+                    return new StudentAssignmentsScreen(user, services);
+                }
+                if (menuItem.equals("Grades")) {
+                    return new StudentGradesScreen(user, services);
                 }
                 break;
             case TEACHER:
