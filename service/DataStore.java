@@ -2,6 +2,7 @@ package service;
 
 import model.Admin;
 import model.Assignment;
+import model.AttendanceRecord;
 import model.Course;
 import model.CourseStatus;
 import model.Enrollment;
@@ -31,6 +32,7 @@ public class DataStore {
     private final List<LessonCompletion> completions = new ArrayList<>();
     private final List<Assignment> assignments = new ArrayList<>();
     private final List<Submission> submissions = new ArrayList<>();
+    private final List<AttendanceRecord> attendance = new ArrayList<>();
 
     public DataStore(Path folder) {
         this.folder = folder;
@@ -65,6 +67,10 @@ public class DataStore {
         return submissions;
     }
 
+    public List<AttendanceRecord> getAttendance() {
+        return attendance;
+    }
+
     // Makes user input safe to store: tabs and line breaks would break the file format
     public static String clean(String text) {
         return text == null ? "" : text.replaceAll("[\\t\\r\\n]+", " ").trim();
@@ -94,6 +100,9 @@ public class DataStore {
             submission.setMarks(row[4].isEmpty() ? null : Integer.valueOf(row[4]));
             submission.setFeedback(row[5]);
             submissions.add(submission);
+        }
+        for (String[] row : read("attendance.txt", 4)) {
+            attendance.add(new AttendanceRecord(row[0], row[1], row[2], Boolean.parseBoolean(row[3])));
         }
 
         if (users.isEmpty()) {
@@ -150,6 +159,12 @@ public class DataStore {
                     marks, s.getFeedback()));
         }
         write("submissions.txt", lines);
+
+        lines = new ArrayList<>();
+        for (AttendanceRecord r : attendance) {
+            lines.add(join(r.getCourseCode(), r.getStudentUsername(), r.getDate(), String.valueOf(r.isPresent())));
+        }
+        write("attendance.txt", lines);
     }
 
     public static User createUser(Role role, String id, String name, String username, String password) {
