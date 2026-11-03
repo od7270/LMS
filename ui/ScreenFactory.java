@@ -9,6 +9,7 @@ import ui.screens.StudentAssignmentsScreen;
 import ui.screens.StudentCoursesScreen;
 import ui.screens.StudentGradesScreen;
 import ui.screens.TeacherAssignmentsScreen;
+import ui.screens.TeacherAttendanceScreen;
 import ui.screens.TeacherCoursesScreen;
 import ui.screens.TeacherGradingScreen;
 import ui.screens.TeacherStudentsScreen;
@@ -37,6 +38,9 @@ public class ScreenFactory {
                 }
                 if (menuItem.equals("Grade Submissions")) {
                     return new TeacherGradingScreen(user, services);
+                }
+                if (menuItem.equals("Attendance")) {
+                    return new TeacherAttendanceScreen(user, services);
                 }
                 if (menuItem.equals("Students")) {
                     return new TeacherStudentsScreen(user, services);
