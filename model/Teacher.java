@@ -12,6 +12,6 @@ public class Teacher extends User {
 
     @Override
     public String[] getMenuItems() {
-        return new String[] {"My Courses", "Create Assignment", "Grade Submissions", "Attendance", "Students", "Profile"};
+        return new String[] {"My Courses", "Assignments", "Grade Submissions", "Attendance", "Students", "Profile"};
     }
 }
