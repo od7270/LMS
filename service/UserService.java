@@ -67,6 +67,7 @@ public class UserService {
         store.getUsers().remove(user);
         store.getEnrollments().removeIf(e -> e.getStudentUsername().equals(username));
         store.getCompletions().removeIf(c -> c.getStudentUsername().equals(username));
+        store.getSubmissions().removeIf(s -> s.getStudentUsername().equals(username));
         store.save();
     }
 

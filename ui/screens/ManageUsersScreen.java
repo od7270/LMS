@@ -94,7 +94,7 @@ public class ManageUsersScreen implements Screen {
             return;
         }
         User user = users.get(row);
-        String warning = role == Role.STUDENT ? " Their enrollments and progress will be removed too." : "";
+        String warning = role == Role.STUDENT ? " Their enrollments, progress and submissions will be removed too." : "";
         if (Dialogs.confirm(panel, "Delete " + user.getName() + " (" + user.getUsername() + ")?" + warning)) {
             try {
                 services.users.deleteUser(user.getUsername());

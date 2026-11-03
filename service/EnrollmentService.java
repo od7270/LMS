@@ -36,13 +36,16 @@ public class EnrollmentService {
         }
     }
 
-    // Removes the student from the course and clears their progress in it
+    // Removes the student from the course and clears their progress and submissions in it
     public void unenroll(String studentUsername, String courseCode) {
         List<Integer> lessonIds = lessonIds(courseCode);
+        List<String> assignmentIds = CourseService.assignmentIds(store, courseCode);
         store.getEnrollments().removeIf(e ->
                 e.getStudentUsername().equals(studentUsername) && e.getCourseCode().equals(courseCode));
         store.getCompletions().removeIf(c ->
                 c.getStudentUsername().equals(studentUsername) && lessonIds.contains(c.getLessonId()));
+        store.getSubmissions().removeIf(s ->
+                s.getStudentUsername().equals(studentUsername) && assignmentIds.contains(s.getAssignmentId()));
         store.save();
     }
 

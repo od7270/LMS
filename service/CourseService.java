@@ -1,5 +1,6 @@
 package service;
 
+import model.Assignment;
 import model.Course;
 import model.CourseStatus;
 import model.Lesson;
@@ -70,18 +71,32 @@ public class CourseService {
         }
     }
 
-    // Deletes the course together with its lessons, enrollments and completions
+    // Deletes the course together with its lessons, enrollments, completions, assignments and submissions
     public void delete(String code) {
         List<Integer> lessonIds = new ArrayList<>();
         for (Lesson lesson : getLessons(code)) {
             lessonIds.add(lesson.getId());
         }
+        List<String> assignmentIds = assignmentIds(store, code);
 
         store.getCourses().removeIf(c -> c.getCode().equals(code));
         store.getLessons().removeIf(l -> l.getCourseCode().equals(code));
         store.getEnrollments().removeIf(e -> e.getCourseCode().equals(code));
         store.getCompletions().removeIf(c -> lessonIds.contains(c.getLessonId()));
+        store.getAssignments().removeIf(a -> a.getCourseCode().equals(code));
+        store.getSubmissions().removeIf(s -> assignmentIds.contains(s.getAssignmentId()));
         store.save();
+    }
+
+    // IDs of the course's assignments; used when deleting a course or unenrolling a student
+    static List<String> assignmentIds(DataStore store, String courseCode) {
+        List<String> ids = new ArrayList<>();
+        for (Assignment assignment : store.getAssignments()) {
+            if (assignment.getCourseCode().equals(courseCode)) {
+                ids.add(assignment.getId());
+            }
+        }
+        return ids;
     }
 
     // ---- Lessons ----
