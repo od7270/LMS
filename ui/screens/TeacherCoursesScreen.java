@@ -149,7 +149,7 @@ public class TeacherCoursesScreen implements Screen {
     private void deleteCourse() {
         Course course = selectedCourse();
         if (course != null && Dialogs.confirm(panel, "Delete " + course.getCode()
-                + "? Its lessons, assignments, enrollments, student progress and submissions will be removed too.")) {
+                + "? Its lessons, assignments, enrollments, attendance, student progress and submissions will be removed too.")) {
             services.courses.delete(course.getCode());
             refresh();
         }

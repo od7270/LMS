@@ -135,7 +135,7 @@ public class ManageCoursesScreen implements Screen {
     private void delete() {
         Course course = selectedCourse();
         if (course != null && Dialogs.confirm(panel, "Delete " + course.getCode()
-                + "? Its lessons, assignments, enrollments, student progress and submissions will be removed too.")) {
+                + "? Its lessons, assignments, enrollments, attendance, student progress and submissions will be removed too.")) {
             services.courses.delete(course.getCode());
             courseTable.clearSelection();
             refresh();
@@ -239,7 +239,7 @@ public class ManageCoursesScreen implements Screen {
             }
             User student = enrolled.get(row);
             if (Dialogs.confirm(enrolledTable, "Remove " + student.getName() + " from " + code
-                    + "? Their progress and submissions in this course will be cleared.")) {
+                    + "? Their progress, submissions and attendance in this course will be cleared.")) {
                 services.enrollments.unenroll(student.getUsername(), code);
                 reload.run();
             }
