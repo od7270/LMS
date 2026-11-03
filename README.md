@@ -2,7 +2,7 @@
 
 A desktop Learning Management System built in Java using **Swing only**. It has one login screen and a separate dashboard for each of three user roles: **Student**, **Teacher** and **Admin**.
 
-> **Status:** Phases 1–2 done. Phase 3 has started with its first feature, **Courses & Video Lessons**: teachers build courses from YouTube lessons, the admin approves courses, manages users and enrolls students, and students watch lessons and track their progress. Data is saved to text files. The other menu items are still placeholders (see [Roadmap](#roadmap)).
+> **Status:** Phases 1–2 done. Phase 3 has two features working: **Courses & Video Lessons** (teachers build courses from YouTube lessons, the admin approves courses, manages users and enrolls students, students watch lessons and track their progress) and **Assignments & Grades** (teachers set assignments, students submit a link to their work, teachers grade it, students see their marks). Data is saved to text files. The other menu items are still placeholders (see [Roadmap](#roadmap)).
 
 ---
 
@@ -122,10 +122,33 @@ Approval happens **once per course**. Lessons added after approval show up for s
 
 **Watch Video:** opens the link in the default browser. If the system can't open a browser, a dialog shows the link so it can be copied.
 
+### Assignments & Grades ✅
+
+How an assignment moves through the system:
+```
+Teacher creates assignment (course, due date, max marks)
+  ──▶ students of that course see it (approved courses only) ── "Not submitted"
+  ──▶ student submits a link to their work ── "Submitted", or "Late" if after the due date
+  ──▶ student can resubmit (replaces the link) until it is graded
+  ──▶ teacher opens the link and grades it (marks + feedback) ── "Graded"; resubmitting is locked
+```
+
+| Role | Screen | What it does |
+|---|---|---|
+| **Teacher** | Assignments | Table of the assignments in own courses (Course, Title, Due, Max Marks, Submitted x/enrolled, Graded) with the selected one's description. **New Assignment** (course, title, description, due date, max marks), **Edit**, **Delete** (also deletes its submissions). |
+| **Teacher** | Grade Submissions | Choose an assignment and see every enrolled student (Status, Submitted On, Marks, Feedback). **Open Link** opens the student's work in the browser; **Grade** enters marks and feedback (can be changed later). |
+| **Student** | Assignments | Assignments of all enrolled, approved courses (Course, Title, Due, Max Marks, Status) with the description and the submitted link. **Submit Link** / **Resubmit** (disabled once graded), **Open My Link**. |
+| **Student** | Grades | Every graded assignment (Marks x/max, %, Feedback), and below it a total per course over the graded assignments. |
+
+**Validation:**
+- Assignment title is required. The due date must be a real date written as `YYYY-MM-DD`. Max marks must be a whole number above 0, and can't be lowered below marks already given.
+- A submission must be a link starting with `http://` or `https://` (Google Drive, GitHub, etc.).
+- Marks must be a whole number from 0 to the assignment's max marks.
+
 | Role | Menu items (✅ = working) |
 |---|---|
-| Student | My Courses ✅, Assignments, Grades, Attendance, Timetable, Profile |
-| Teacher | My Courses ✅, Create Assignment, Grade Submissions, Attendance, Students ✅, Profile |
+| Student | My Courses ✅, Assignments ✅, Grades ✅, Attendance, Timetable, Profile |
+| Teacher | My Courses ✅, Assignments ✅, Grade Submissions ✅, Attendance, Students ✅, Profile |
 | Admin | Manage Students ✅, Manage Teachers ✅, Manage Courses ✅, Reports, Settings |
 
 ---
@@ -136,8 +159,11 @@ Approval happens **once per course**. Lessons added after approval show up for s
 2. Log in as **teacher**. In **My Courses**, click **New Course** and create `CS101` (it shows *Pending*). Select it and **Add Lesson** three times with YouTube links. Log out.
 3. Log in as **admin**. In **Manage Courses**, select `CS101`, check it with **View Lessons**, then click **Approve**. Open **Enrollments** and enroll `student` and `ravi`. Log out.
 4. Log in as **student**. In **My Courses**, select `CS101` and a lesson, click **Watch Video** (the browser opens), then **Mark Complete**. The progress bar shows 1/3 (33%).
-5. Log in as **teacher**. **Students** → `CS101` shows `student` at 1/3 (33%).
-6. Close the app and run it again. Everything is still there.
+5. Log in as **teacher**. **Students** → `CS101` shows `student` at 1/3 (33%). In **Assignments**, click **New Assignment** and create `HW1` for `CS101` (due date in the future, max marks 10). Log out.
+6. Log in as **student**. In **Assignments**, select `HW1`, click **Submit Link** and paste a link (e.g. a GitHub repo). The status shows *Submitted*. Log out.
+7. Log in as **teacher**. In **Grade Submissions**, choose `HW1`, select `student`, click **Open Link**, then **Grade** with 8 and some feedback. Log out.
+8. Log in as **student**. **Assignments** shows `HW1` as *Graded* (Resubmit is disabled); **Grades** shows 8/10 (80%) and the course total.
+9. Close the app and run it again. Everything is still there.
 
 ---
 
@@ -166,8 +192,8 @@ lms/
 │   ├── Lesson.java                 # one YouTube video in a course
 │   ├── Enrollment.java             # student ↔ course
 │   ├── LessonCompletion.java       # student completed a lesson
-│   ├── Assignment.java             # (not used yet)
-│   ├── Submission.java             # (not used yet) holds marks + feedback
+│   ├── Assignment.java             # course, title, description, due date, max marks
+│   ├── Submission.java             # student's link + date, marks + feedback
 │   └── AttendanceRecord.java       # (not used yet)
 ├── service/
 │   ├── Services.java               # creates all services around one DataStore
@@ -175,7 +201,8 @@ lms/
 │   ├── AuthService.java            # login check
 │   ├── UserService.java            # add/delete/find students & teachers
 │   ├── CourseService.java          # courses + lessons, approval, YouTube check
-│   └── EnrollmentService.java      # enrollments, completion, progress %
+│   ├── EnrollmentService.java      # enrollments, completion, progress %
+│   └── AssignmentService.java      # assignments, submissions, grading, status
 ├── ui/
 │   ├── AppWindow.java              # the JFrame + switching login ↔ dashboard
 │   ├── LoginScreen.java            # login form
@@ -187,7 +214,11 @@ lms/
 │   ├── BrowserUtil.java            # opens a link in the browser
 │   └── screens/
 │       ├── StudentCoursesScreen.java
+│       ├── StudentAssignmentsScreen.java
+│       ├── StudentGradesScreen.java
 │       ├── TeacherCoursesScreen.java
+│       ├── TeacherAssignmentsScreen.java
+│       ├── TeacherGradingScreen.java
 │       ├── TeacherStudentsScreen.java
 │       ├── ManageCoursesScreen.java
 │       └── ManageUsersScreen.java  # used for both students and teachers
@@ -207,11 +238,14 @@ lms/
 | `model.Course` | `code` (unique ID), `title`, `description`, `teacherUsername`, `status`. |
 | `model.Lesson` | `id`, `courseCode`, `title`, `youtubeUrl`. Lessons are shown in the order they were added. |
 | `model.Enrollment` / `LessonCompletion` | Link records: which student is in which course, and which lessons they completed. |
+| `model.Assignment` | `id`, `courseCode`, `title`, `description`, `dueDate` (`YYYY-MM-DD`), `maxMarks`. |
+| `model.Submission` | `assignmentId`, `studentUsername`, `link`, `submittedDate`, `marks` (`null` until graded), `feedback`. |
 | `service.DataStore` | Holds all lists in memory, loads them from `data/*.txt` on start and rewrites the files after every change. Seeds the demo users on first run. `clean()` strips tabs and line breaks from input so they can't break the file format. |
 | `service.AuthService` | `login(username, password)` returns the `User`, or `null`. |
 | `service.UserService` | `getUsers(role)`, `findByUsername`, `addUser` (validation, auto IDs like `S2`, `T3`), `deleteUser` (cleans up related records). |
-| `service.CourseService` | `create`, `getAll`, `getByTeacher`, `find`, `approve`, `delete` (removes the course's lessons, enrollments and completions too); `getLessons`, `addLesson`, `updateLesson`, `deleteLesson`; YouTube link check. |
-| `service.EnrollmentService` | `enroll`, `unenroll` (also clears that course's progress), `getStudentsIn`, `getCoursesFor` (approved courses only), `toggleComplete`, `isComplete`, `completedCount`, `percent`. |
+| `service.CourseService` | `create`, `getAll`, `getByTeacher`, `find`, `approve`, `delete` (removes the course's lessons, enrollments, completions, assignments and submissions too); `getLessons`, `addLesson`, `updateLesson`, `deleteLesson`; YouTube link check. |
+| `service.EnrollmentService` | `enroll`, `unenroll` (also clears that course's progress and submissions), `getStudentsIn`, `getCoursesFor` (approved courses only), `toggleComplete`, `isComplete`, `completedCount`, `percent`. |
+| `service.AssignmentService` | `getByCourse`, `getByTeacher`, `getForStudent` (approved courses only), `create`, `update`, `delete`; `submit` (create or resubmit until graded), `grade`, `findSubmission`, `getSubmissions`, `status` (Not submitted / Submitted / Late / Graded), `isLate`. |
 | `service.Services` | Builds one `DataStore` and all services on top of it, so the UI only needs to receive one object. |
 | `ui.AppWindow` | Owns the `JFrame` and the top-level `CardLayout` (login ↔ dashboard). |
 | `ui.DashboardFactory` | Builds the dashboard frame. Its content area uses a second `CardLayout`, with one card per working screen plus a "coming soon" placeholder. |
@@ -244,18 +278,24 @@ Services report bad input by throwing `IllegalArgumentException` with a readable
 
  Course 1 ──── * Lesson          Course 1 ──── * Enrollment * ──── 1 Student
  Lesson 1 ──── * LessonCompletion * ──── 1 Student
+ Course 1 ──── * Assignment 1 ──── * Submission * ──── 1 Student
  Course * ──── 1 Teacher (teacherUsername)
 
  ┌──────────── Services ─────────────┐
  │ AuthService   UserService          │
- │ CourseService EnrollmentService    │──uses──▶ DataStore ──reads/writes──▶ data/*.txt
+ │ CourseService EnrollmentService    │
+ │ AssignmentService                  │──uses──▶ DataStore ──reads/writes──▶ data/*.txt
  └────────────────────────────────────┘
           ▲
           │ uses
  AppWindow ──▶ LoginScreen
      └──▶ DashboardFactory ──▶ ScreenFactory ──creates──▶ «interface» Screen
                                                           ├── StudentCoursesScreen
+                                                          ├── StudentAssignmentsScreen
+                                                          ├── StudentGradesScreen
                                                           ├── TeacherCoursesScreen
+                                                          ├── TeacherAssignmentsScreen
+                                                          ├── TeacherGradingScreen
                                                           ├── TeacherStudentsScreen
                                                           ├── ManageCoursesScreen
                                                           └── ManageUsersScreen
@@ -294,6 +334,8 @@ Logout ──▶ AppWindow.showLogin()
 | `lessons.txt` | id, courseCode, title, youtubeUrl |
 | `enrollments.txt` | courseCode, studentUsername |
 | `completions.txt` | lessonId, studentUsername |
+| `assignments.txt` | id, courseCode, title, description, dueDate, maxMarks |
+| `submissions.txt` | assignmentId, studentUsername, link, submittedDate, marks (empty until graded), feedback |
 
 - Missing files are treated as empty. If `users.txt` is missing, the three demo users are created.
 - Lines with the wrong number of columns are skipped.
@@ -301,10 +343,11 @@ Logout ──▶ AppWindow.showLogin()
 
 | Delete… | Also removes |
 |---|---|
-| Course | its lessons, enrollments, and completions of its lessons |
+| Course | its lessons, enrollments, completions of its lessons, its assignments and their submissions |
 | Lesson | completions of that lesson |
-| Student | their enrollments and completions |
-| Enrollment (Remove) | the student's completions in that course |
+| Assignment | its submissions |
+| Student | their enrollments, completions and submissions |
+| Enrollment (Remove) | the student's completions and submissions in that course |
 | Teacher | not allowed while they own courses |
 
 ---
@@ -369,12 +412,12 @@ These phases are a proposal. We will adjust them as we decide on features.
 ### Phase 3: Real content in the dashboards 🟡 *(in progress)*
 - ✅ Nested `CardLayout` content area + `Screen` interface + `ScreenFactory`.
 - ✅ **Courses & Video Lessons** (teacher courses/lessons, admin approval/enrollment/user management, student watch + progress).
-- ⬜ Assignments & submissions (`Assignment`, `Submission` models already exist).
-- ⬜ Grades, Attendance, Timetable, Profile, Reports, Settings.
+- ✅ **Assignments & Grades** (teacher creates and grades assignments, student submits a link and sees grades).
+- ⬜ Attendance, Timetable, Profile, Reports, Settings.
 
 ### Phase 4: Data persistence 🟡 *(in progress)*
-- ✅ Text-file storage via `DataStore` for users, courses, lessons, enrollments and completions.
-- ⬜ Add a file for each new model as features arrive (assignments, attendance…).
+- ✅ Text-file storage via `DataStore` for users, courses, lessons, enrollments, completions, assignments and submissions.
+- ⬜ Add a file for each new model as features arrive (attendance…).
 - If the course allows it later, a database (JDBC) could replace the files.
 
 ### Phase 5: Real authentication 🟡 *(in progress)*
@@ -382,7 +425,7 @@ These phases are a proposal. We will adjust them as we decide on features.
 - ⬜ Change password (Profile), hash passwords.
 
 ### Phase 6: Polish
-- ✅ Input validation, error dialogs and delete confirmations for the course feature.
+- ✅ Input validation, error dialogs and delete confirmations for the course and assignment features.
 - ⬜ Confirm on logout, minimum window size, search/sort in tables.
 
 ---
@@ -395,8 +438,8 @@ Candidate features for the remaining menu items. We haven't committed to any of 
 | Menu item | Planned feature |
 |---|---|
 | My Courses | ✅ Done |
-| Assignments | Pending and submitted assignments with due dates; submit an assignment. |
-| Grades | Grades per course/assignment. |
+| Assignments | ✅ Done (submit a link, resubmit until graded) |
+| Grades | ✅ Done (marks per assignment + course totals) |
 | Attendance | Attendance percentage per course. |
 | Timetable | Weekly class schedule. |
 | Profile | View own details; change password. |
@@ -405,8 +448,8 @@ Candidate features for the remaining menu items. We haven't committed to any of 
 | Menu item | Planned feature |
 |---|---|
 | My Courses | ✅ Done |
-| Create Assignment | Form: course, title, description, due date, max marks. |
-| Grade Submissions | List of submissions per assignment; enter marks and feedback. |
+| Assignments | ✅ Done (create, edit, delete) |
+| Grade Submissions | ✅ Done (open link, marks + feedback) |
 | Attendance | Pick a course and date, then tick present/absent for each student. |
 | Students | ✅ Done (progress per course) |
 | Profile | View own details; change password. |
