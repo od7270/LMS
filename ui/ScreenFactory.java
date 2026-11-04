@@ -4,6 +4,7 @@ import model.Role;
 import model.User;
 import service.Services;
 import ui.screens.ManageCoursesScreen;
+import ui.screens.ManageTimetableScreen;
 import ui.screens.ManageUsersScreen;
 import ui.screens.ProfileScreen;
 import ui.screens.StudentAssignmentsScreen;
@@ -64,6 +65,9 @@ public class ScreenFactory {
                 }
                 if (menuItem.equals("Manage Courses")) {
                     return new ManageCoursesScreen(services);
+                }
+                if (menuItem.equals("Timetable")) {
+                    return new ManageTimetableScreen(services);
                 }
                 break;
         }
