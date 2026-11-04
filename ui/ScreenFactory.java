@@ -16,6 +16,7 @@ import ui.screens.TeacherAttendanceScreen;
 import ui.screens.TeacherCoursesScreen;
 import ui.screens.TeacherGradingScreen;
 import ui.screens.TeacherStudentsScreen;
+import ui.screens.TimetableScreen;
 
 public class ScreenFactory {
     // Returns the screen for a menu item, or null if it isn't built yet
@@ -38,6 +39,9 @@ public class ScreenFactory {
                 if (menuItem.equals("Attendance")) {
                     return new StudentAttendanceScreen(user, services);
                 }
+                if (menuItem.equals("Timetable")) {
+                    return new TimetableScreen(user, services);
+                }
                 break;
             case TEACHER:
                 if (menuItem.equals("My Courses")) {
@@ -54,6 +58,9 @@ public class ScreenFactory {
                 }
                 if (menuItem.equals("Students")) {
                     return new TeacherStudentsScreen(user, services);
+                }
+                if (menuItem.equals("Timetable")) {
+                    return new TimetableScreen(user, services);
                 }
                 break;
             case ADMIN:
