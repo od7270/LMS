@@ -2,7 +2,7 @@
 
 A desktop Learning Management System built in Java using **Swing only**. It has one login screen and a separate dashboard for each of three user roles: **Student**, **Teacher** and **Admin**.
 
-> **Status:** Phases 1–2 done. Phase 3 has two features working: **Courses & Video Lessons** (teachers build courses from YouTube lessons, the admin approves courses, manages users and enrolls students, students watch lessons and track their progress) **Assignments & Grades** (teachers set assignments, students submit a link to their work, teachers grade it, students see their marks) and **Attendance** (teachers tick who was present each day, students see their percentage with a warning below 75%). Data is saved to text files. The other menu items are still placeholders (see [Roadmap](#roadmap)).
+> **Status:** Phases 1–2 and 5 done. Phase 3 has four features working: **Courses & Video Lessons** (teachers build courses from YouTube lessons, the admin approves courses, manages users and enrolls students, students watch lessons and track their progress), **Assignments & Grades** (teachers set assignments, students submit a link to their work, teachers grade it, students see their marks), **Attendance** (teachers tick who was present each day, students see their percentage with a warning below 75%) and **Profile** (every user sees their details and changes their password). Passwords are stored as salted SHA-256 hashes. Data is saved to text files. The other menu items are still placeholders (see [Roadmap](#roadmap)).
 
 ---
 
@@ -28,8 +28,8 @@ An LMS is where a school or college manages its courses, students and teachers. 
 
 | Role | Purpose |
 |---|---|
-| **Student** | Watches the lessons of enrolled courses and tracks progress, submits assignments, sees grades and attendance. Later: timetable, profile. |
-| **Teacher** | Creates courses, adds YouTube video lessons, follows student progress, sets and grades assignments, takes attendance. Later: profile. |
+| **Student** | Watches the lessons of enrolled courses and tracks progress, submits assignments, sees grades and attendance, changes own password. Later: timetable. |
+| **Teacher** | Creates courses, adds YouTube video lessons, follows student progress, sets and grades assignments, takes attendance, changes own password. |
 | **Admin** | Manages the system: adds/removes students and teachers, approves courses, enrolls students. Later: reports, settings. |
 
 Each role logs in on the same login screen and gets its own dashboard.
@@ -77,7 +77,7 @@ On first run the app creates `data/users.txt` with three demo accounts. All thre
 
 The admin can add more students and teachers from the dashboard. To reset everything, close the app and delete the `data/` folder.
 
-> Passwords are stored as **plain text** in `data/users.txt`. That's fine for a demo but not for real use (see [Open Decisions](#open-decisions)).
+Each user can change their own password under **Profile**. Passwords are never written to disk: `data/users.txt` holds a salted SHA-256 hash (`sha256:<salt>:<hash>`). A `users.txt` from an older version with plain passwords is hashed automatically the next time the app starts, so existing logins keep working.
 
 ---
 
@@ -156,11 +156,21 @@ Teacher creates assignment (course, due date, max marks)
 - A student only counts the days that have a record for them, so a student enrolled mid-term isn't marked absent for earlier days. On an older day they show unticked and are only saved if the teacher ticks or unticks them.
 - Switching course or day with unsaved ticks asks before discarding them.
 
+### Profile ✅
+
+One screen shared by all three roles:
+- **My Details:** name, username, ID and role.
+- **Summary:**
+  - Students see their enrolled courses, assignments submitted (x/y) and overall attendance.
+  - Teachers see their courses (approved/pending), the students they teach and their number of assignments.
+  - The admin sees student, teacher and course counts, and how many courses are pending approval.
+- **Change Password:** current, new and confirm. The current password must be right. The new one must be at least 4 characters with no spaces, different from the current one, and the same in both fields.
+
 | Role | Menu items (✅ = working) |
 |---|---|
-| Student | My Courses ✅, Assignments ✅, Grades ✅, Attendance ✅, Timetable, Profile |
-| Teacher | My Courses ✅, Assignments ✅, Grade Submissions ✅, Attendance ✅, Students ✅, Profile |
-| Admin | Manage Students ✅, Manage Teachers ✅, Manage Courses ✅, Reports, Settings |
+| Student | My Courses ✅, Assignments ✅, Grades ✅, Attendance ✅, Timetable, Profile ✅ |
+| Teacher | My Courses ✅, Assignments ✅, Grade Submissions ✅, Attendance ✅, Students ✅, Profile ✅ |
+| Admin | Manage Students ✅, Manage Teachers ✅, Manage Courses ✅, Reports, Settings, Profile ✅ |
 
 ---
 
@@ -176,7 +186,8 @@ Teacher creates assignment (course, due date, max marks)
 8. Log in as **student**. **Assignments** shows `HW1` as *Graded* (Resubmit is disabled); **Grades** shows 8/10 (80%) and the course total. Log out.
 9. Log in as **teacher**. In **Attendance**, choose `CS101`, click **New Day** (today), untick `ravi`, click **Save**. `ravi` shows `0/1 (0%) - Below 75%`. Log out.
 10. Log in as **student**. **Attendance** shows `CS101` at 1/1 (100%), *OK*.
-11. Close the app and run it again. Everything is still there.
+11. Still as **student**, open **Profile**, change the password from `admin` to `stud123`, log out and log back in with `stud123`.
+12. Close the app and run it again. Everything is still there.
 
 ---
 
@@ -212,7 +223,8 @@ lms/
 │   ├── Services.java               # creates all services around one DataStore
 │   ├── DataStore.java              # in-memory lists + load/save text files
 │   ├── AuthService.java            # login check
-│   ├── UserService.java            # add/delete/find students & teachers
+│   ├── Passwords.java              # salted SHA-256 hash + check
+│   ├── UserService.java            # add/delete/find users, change password
 │   ├── CourseService.java          # courses + lessons, approval, YouTube check
 │   ├── EnrollmentService.java      # enrollments, completion, progress %
 │   ├── AssignmentService.java      # assignments, submissions, grading, status
@@ -237,7 +249,8 @@ lms/
 │       ├── TeacherGradingScreen.java
 │       ├── TeacherStudentsScreen.java
 │       ├── ManageCoursesScreen.java
-│       └── ManageUsersScreen.java  # used for both students and teachers
+│       ├── ManageUsersScreen.java  # used for both students and teachers
+│       └── ProfileScreen.java      # used for all three roles
 ├── data/                           # saved data (created on first run)
 ├── out/                            # compiled .class files (generated)
 ├── run.sh                          # compile + run script
@@ -249,7 +262,7 @@ lms/
 | Class | Responsibility |
 |---|---|
 | `LearningManagementSystem` | `main()` creates `Services` (with the `data/` folder) and an `AppWindow`, then shows it on the Swing Event Dispatch Thread. |
-| `model.User` *(abstract)* | `id`, `name`, `username`, `password` (private). `checkPassword()` for login; `getPassword()` is used only by `DataStore` for saving. Abstract `getRole()` and `getMenuItems()`. |
+| `model.User` *(abstract)* | `id`, `name`, `username`, `passwordHash` (private). `getPasswordHash()` / `setPasswordHash()` are used by `DataStore`, `AuthService` and `UserService`; the plain password is never kept. Abstract `getRole()` and `getMenuItems()`. |
 | `model.Student` / `Teacher` / `Admin` | Each returns its own role and dashboard menu. |
 | `model.Course` | `code` (unique ID), `title`, `description`, `teacherUsername`, `status`. |
 | `model.Lesson` | `id`, `courseCode`, `title`, `youtubeUrl`. Lessons are shown in the order they were added. |
@@ -258,8 +271,9 @@ lms/
 | `model.Submission` | `assignmentId`, `studentUsername`, `link`, `submittedDate`, `marks` (`null` until graded), `feedback`. |
 | `model.AttendanceRecord` | `courseCode`, `studentUsername`, `date`, `present`. |
 | `service.DataStore` | Holds all lists in memory, loads them from `data/*.txt` on start and rewrites the files after every change. Seeds the demo users on first run. `clean()` strips tabs and line breaks from input so they can't break the file format. |
-| `service.AuthService` | `login(username, password)` returns the `User`, or `null`. |
-| `service.UserService` | `getUsers(role)`, `findByUsername`, `addUser` (validation, auto IDs like `S2`, `T3`), `deleteUser` (cleans up related records). |
+| `service.AuthService` | `login(username, password)` returns the `User`, or `null`. The password is checked with `Passwords.matches`. |
+| `service.Passwords` | `hash` (random 16-byte salt + SHA-256, via `java.security`), `matches` (constant-time compare), `isHashed`. |
+| `service.UserService` | `getUsers(role)`, `findByUsername`, `addUser` (validation, auto IDs like `S2`, `T3`), `deleteUser` (cleans up related records), `changePassword`. |
 | `service.CourseService` | `create`, `getAll`, `getByTeacher`, `find`, `approve`, `delete` (removes the course's lessons, enrollments, completions, assignments, submissions and attendance too); `getLessons`, `addLesson`, `updateLesson`, `deleteLesson`; YouTube link check. |
 | `service.EnrollmentService` | `enroll`, `unenroll` (also clears that course's progress, submissions and attendance), `getStudentsIn`, `getCoursesFor` (approved courses only), `toggleComplete`, `isComplete`, `completedCount`, `percent`. |
 | `service.AssignmentService` | `getByCourse`, `getByTeacher`, `getForStudent` (approved courses only), `create`, `update`, `delete`; `submit` (create or resubmit until graded), `grade`, `findSubmission`, `getSubmissions`, `status` (Not submitted / Submitted / Late / Graded), `isLate`. |
@@ -279,7 +293,7 @@ Services report bad input by throwing `IllegalArgumentException` with a readable
 |---|---|
 | **Abstraction** | `User` is an abstract class and `Screen` is an interface. The dashboard only knows "a `Screen`" and calls `refresh()` on it without knowing which screen it is. |
 | **Inheritance** | `Student`, `Teacher` and `Admin` extend `User`. |
-| **Polymorphism** | `user.getMenuItems()`, `user.getRole()` and `screen.refresh()` behave differently depending on the object. `ManageUsersScreen` is one class reused for two roles. |
+| **Polymorphism** | `user.getMenuItems()`, `user.getRole()` and `screen.refresh()` behave differently depending on the object. `ManageUsersScreen` is one class reused for two roles, and `ProfileScreen` one class for all three. |
 | **Encapsulation** | All fields are `private`. The UI never touches the data lists or files; it goes through the services. |
 | **Composition** | `AppWindow` *has a* `JFrame`; `Services` *has a* `DataStore` shared by all services. |
 
@@ -287,7 +301,7 @@ Services report bad input by throwing `IllegalArgumentException` with a readable
 ```
                     ┌──────────────────────────┐
                     │   «abstract» User        │
-                    │ + checkPassword()        │
+                    │ - passwordHash           │
                     │ + getRole()      «abs»   │
                     │ + getMenuItems() «abs»   │
                     └────────────┬─────────────┘
@@ -350,7 +364,7 @@ Logout ──▶ AppWindow.showLogin()
 
 | File | Columns |
 |---|---|
-| `users.txt` | role, id, name, username, password |
+| `users.txt` | role, id, name, username, passwordHash (`sha256:<salt>:<hash>`) |
 | `courses.txt` | code, title, description, teacherUsername, status |
 | `lessons.txt` | id, courseCode, title, youtubeUrl |
 | `enrollments.txt` | courseCode, studentUsername |
@@ -436,7 +450,8 @@ These phases are a proposal. We will adjust them as we decide on features.
 - ✅ **Courses & Video Lessons** (teacher courses/lessons, admin approval/enrollment/user management, student watch + progress).
 - ✅ **Assignments & Grades** (teacher creates and grades assignments, student submits a link and sees grades).
 - ✅ **Attendance** (teacher ticks present/absent per day, student sees % per course with a warning below 75%).
-- ⬜ Timetable, Profile, Reports, Settings.
+- ✅ **Profile** (details, role summary, change password; also added to the Admin menu).
+- ⬜ Timetable, Reports, Settings.
 
 ### Phase 4: Data persistence 🟡 *(in progress)*
 - ✅ Text-file storage via `DataStore` for users, courses, lessons, enrollments, completions, assignments, submissions and attendance.
@@ -444,9 +459,10 @@ These phases are a proposal. We will adjust them as we decide on features.
 - ⬜ Add a file for each new model as features arrive (timetable…).
 - If the course allows it later, a database (JDBC) could replace the files.
 
-### Phase 5: Real authentication 🟡 *(in progress)*
+### Phase 5: Real authentication ✅ *(done)*
 - ✅ Users are loaded from storage; the admin can add and delete them.
-- ⬜ Change password (Profile), hash passwords.
+- ✅ Change password (Profile).
+- ✅ Salted SHA-256 password hashes; old plain-text files are migrated on load.
 
 ### Phase 6: Polish
 - ✅ Input validation, error dialogs and delete confirmations for the course, assignment and attendance features.
@@ -466,7 +482,7 @@ Candidate features for the remaining menu items. We haven't committed to any of 
 | Grades | ✅ Done (marks per assignment + course totals) |
 | Attendance | ✅ Done (% per course, warning below 75%) |
 | Timetable | Weekly class schedule. |
-| Profile | View own details; change password. |
+| Profile | ✅ Done (details, summary, change password) |
 
 ### Teacher
 | Menu item | Planned feature |
@@ -476,7 +492,7 @@ Candidate features for the remaining menu items. We haven't committed to any of 
 | Grade Submissions | ✅ Done (open link, marks + feedback) |
 | Attendance | ✅ Done (tick present per day, edit past days) |
 | Students | ✅ Done (progress per course) |
-| Profile | View own details; change password. |
+| Profile | ✅ Done (details, summary, change password) |
 
 ### Admin
 | Menu item | Planned feature |
@@ -497,5 +513,5 @@ Candidate features for the remaining menu items. We haven't committed to any of 
 - [x] ~~How students get into courses.~~ The admin enrolls them.
 - [x] ~~Whether teacher courses need approval.~~ Yes, once per course; admin-created courses are auto-approved.
 - [ ] Whether Admin can also act as a Teacher/Student (single role vs multiple roles per user).
-- [ ] Whether passwords need hashing for the submission.
+- [x] ~~Whether passwords need hashing for the submission.~~ Yes: salted SHA-256.
 - [ ] Whether a teacher's courses can be moved to another teacher (so the teacher can be deleted).
