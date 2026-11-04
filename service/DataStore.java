@@ -12,12 +12,14 @@ import model.Role;
 import model.Student;
 import model.Submission;
 import model.Teacher;
+import model.TimetableSlot;
 import model.User;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.DayOfWeek;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,6 +35,7 @@ public class DataStore {
     private final List<Assignment> assignments = new ArrayList<>();
     private final List<Submission> submissions = new ArrayList<>();
     private final List<AttendanceRecord> attendance = new ArrayList<>();
+    private final List<TimetableSlot> slots = new ArrayList<>();
 
     public DataStore(Path folder) {
         this.folder = folder;
@@ -71,6 +74,10 @@ public class DataStore {
         return attendance;
     }
 
+    public List<TimetableSlot> getSlots() {
+        return slots;
+    }
+
     // Makes user input safe to store: tabs and line breaks would break the file format
     public static String clean(String text) {
         return text == null ? "" : text.replaceAll("[\\t\\r\\n]+", " ").trim();
@@ -103,6 +110,10 @@ public class DataStore {
         }
         for (String[] row : read("attendance.txt", 4)) {
             attendance.add(new AttendanceRecord(row[0], row[1], row[2], Boolean.parseBoolean(row[3])));
+        }
+        for (String[] row : read("timetable.txt", 6)) {
+            slots.add(new TimetableSlot(Integer.parseInt(row[0]), row[1], DayOfWeek.valueOf(row[2]),
+                    Integer.parseInt(row[3]), Integer.parseInt(row[4]), row[5]));
         }
 
         if (users.isEmpty()) {
@@ -177,6 +188,13 @@ public class DataStore {
             lines.add(join(r.getCourseCode(), r.getStudentUsername(), r.getDate(), String.valueOf(r.isPresent())));
         }
         write("attendance.txt", lines);
+
+        lines = new ArrayList<>();
+        for (TimetableSlot t : slots) {
+            lines.add(join(String.valueOf(t.getId()), t.getCourseCode(), t.getDay().name(),
+                    String.valueOf(t.getStartPeriod()), String.valueOf(t.getLength()), t.getRoom()));
+        }
+        write("timetable.txt", lines);
     }
 
     public static User createUser(Role role, String id, String name, String username, String passwordHash) {
