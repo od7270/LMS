@@ -5,6 +5,7 @@ import model.User;
 import service.Services;
 import ui.screens.ManageCoursesScreen;
 import ui.screens.ManageUsersScreen;
+import ui.screens.ProfileScreen;
 import ui.screens.StudentAssignmentsScreen;
 import ui.screens.StudentAttendanceScreen;
 import ui.screens.StudentCoursesScreen;
@@ -18,6 +19,10 @@ import ui.screens.TeacherStudentsScreen;
 public class ScreenFactory {
     // Returns the screen for a menu item, or null if it isn't built yet
     public static Screen create(User user, String menuItem, Services services) {
+        // Every role has the same Profile screen
+        if (menuItem.equals("Profile")) {
+            return new ProfileScreen(user, services);
+        }
         switch (user.getRole()) {
             case STUDENT:
                 if (menuItem.equals("My Courses")) {

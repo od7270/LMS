@@ -12,6 +12,6 @@ public class Admin extends User {
 
     @Override
     public String[] getMenuItems() {
-        return new String[] {"Manage Students", "Manage Teachers", "Manage Courses", "Reports", "Settings"};
+        return new String[] {"Manage Students", "Manage Teachers", "Manage Courses", "Reports", "Settings", "Profile"};
     }
 }
