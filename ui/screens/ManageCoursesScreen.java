@@ -135,7 +135,7 @@ public class ManageCoursesScreen implements Screen {
     private void delete() {
         Course course = selectedCourse();
         if (course != null && Dialogs.confirm(panel, "Delete " + course.getCode()
-                + "? Its lessons, assignments, enrollments, attendance, student progress and submissions will be removed too.")) {
+                + "? Its lessons, assignments, timetable, enrollments, attendance, student progress and submissions will be removed too.")) {
             services.courses.delete(course.getCode());
             courseTable.clearSelection();
             refresh();

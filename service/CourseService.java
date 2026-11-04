@@ -71,7 +71,7 @@ public class CourseService {
         }
     }
 
-    // Deletes the course together with its lessons, enrollments, completions, assignments, submissions and attendance
+    // Deletes the course together with its lessons, enrollments, completions, assignments, submissions, attendance and timetable slots
     public void delete(String code) {
         List<Integer> lessonIds = new ArrayList<>();
         for (Lesson lesson : getLessons(code)) {
@@ -86,6 +86,7 @@ public class CourseService {
         store.getAssignments().removeIf(a -> a.getCourseCode().equals(code));
         store.getSubmissions().removeIf(s -> assignmentIds.contains(s.getAssignmentId()));
         store.getAttendance().removeIf(a -> a.getCourseCode().equals(code));
+        store.getSlots().removeIf(t -> t.getCourseCode().equals(code));
         store.save();
     }
 
