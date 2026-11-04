@@ -72,6 +72,27 @@ public class UserService {
         store.save();
     }
 
+    public void changePassword(User user, String current, String newPassword, String confirm) {
+        if (!Passwords.matches(current, user.getPasswordHash())) {
+            throw new IllegalArgumentException("Current password is wrong.");
+        }
+        if (newPassword == null || newPassword.length() < 4) {
+            throw new IllegalArgumentException("New password must be at least 4 characters.");
+        }
+        if (!newPassword.equals(newPassword.replaceAll("\\s", ""))) {
+            throw new IllegalArgumentException("New password cannot contain spaces.");
+        }
+        if (newPassword.equals(current)) {
+            throw new IllegalArgumentException("New password must be different from the current one.");
+        }
+        if (!newPassword.equals(confirm)) {
+            throw new IllegalArgumentException("New password and confirmation don't match.");
+        }
+
+        user.setPasswordHash(Passwords.hash(newPassword));
+        store.save();
+    }
+
     // IDs look like S1, S2... / T1... / A1...
     private String nextId(Role role) {
         String prefix = role.name().substring(0, 1);
