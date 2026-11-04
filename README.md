@@ -2,7 +2,7 @@
 
 A desktop Learning Management System built in Java using **Swing only**. It has one login screen and a separate dashboard for each of three user roles: **Student**, **Teacher** and **Admin**.
 
-> **Status:** Phases 1–2 and 5 done. Phase 3 has four features working: **Courses & Video Lessons** (teachers build courses from YouTube lessons, the admin approves courses, manages users and enrolls students, students watch lessons and track their progress), **Assignments & Grades** (teachers set assignments, students submit a link to their work, teachers grade it, students see their marks), **Attendance** (teachers tick who was present each day, students see their percentage with a warning below 75%) and **Profile** (every user sees their details and changes their password). Passwords are stored as salted SHA-256 hashes. Data is saved to text files. The other menu items are still placeholders (see [Roadmap](#roadmap)).
+> **Status:** Phases 1–2 and 5 done. Phase 3 has five features working: **Courses & Video Lessons** (teachers build courses from YouTube lessons, the admin approves courses, manages users and enrolls students, students watch lessons and track their progress), **Assignments & Grades** (teachers set assignments, students submit a link to their work, teachers grade it, students see their marks), **Attendance** (teachers tick who was present each day, students see their percentage with a warning below 75%), **Profile** (every user sees their details and changes their password) and **Timetable** (the admin schedules weekly classes without teacher or room double-bookings, students and teachers see their week as a grid). Passwords are stored as salted SHA-256 hashes. Data is saved to text files. The other menu items are still placeholders (see [Roadmap](#roadmap)).
 
 ---
 
@@ -28,9 +28,9 @@ An LMS is where a school or college manages its courses, students and teachers. 
 
 | Role | Purpose |
 |---|---|
-| **Student** | Watches the lessons of enrolled courses and tracks progress, submits assignments, sees grades and attendance, changes own password. Later: timetable. |
-| **Teacher** | Creates courses, adds YouTube video lessons, follows student progress, sets and grades assignments, takes attendance, changes own password. |
-| **Admin** | Manages the system: adds/removes students and teachers, approves courses, enrolls students. Later: reports, settings. |
+| **Student** | Watches the lessons of enrolled courses and tracks progress, submits assignments, sees grades, attendance and the weekly timetable, changes own password. |
+| **Teacher** | Creates courses, adds YouTube video lessons, follows student progress, sets and grades assignments, takes attendance, sees own timetable, changes own password. |
+| **Admin** | Manages the system: adds/removes students and teachers, approves courses, enrolls students, schedules the timetable. Later: reports, settings. |
 
 Each role logs in on the same login screen and gets its own dashboard.
 
@@ -166,11 +166,26 @@ One screen shared by all three roles:
   - The admin sees student, teacher and course counts, and how many courses are pending approval.
 - **Change Password:** current, new and confirm. The current password must be right. The new one must be at least 4 characters with no spaces, different from the current one, and the same in both fields.
 
+### Timetable ✅
+
+The week has 8 hourly periods, 09:00 to 17:00, Monday to Saturday. A class can take 1 to 3 consecutive periods.
+
+| Role | Screen | What it does |
+|---|---|---|
+| **Admin** | Timetable | Every slot (Day, Time, Course, Teacher, Room). **Add Slot** / **Edit Slot** (course, day, start time, length, room) and **Delete Slot**. |
+| **Student** | Timetable | A read-only weekly grid of their approved courses, e.g. `CS101 (A1)` in each hour the class runs, and a list of classes with room and teacher. |
+| **Teacher** | Timetable | The same grid and list for the courses they teach. This menu item is new. |
+
+**Clash rules** when saving a slot:
+- **Blocked:** the class would end after 17:00, the room is empty, the course's teacher already teaches another class at that time, or the room is already in use at that time (room names compare without case).
+- **Warning:** enrolled students who already have another class then are listed, with a *Save anyway?* prompt. If such a clash exists, the student's grid shows both classes in one cell: `CS101 (A1) / MA101 (M1)`.
+- Back-to-back classes (10:00–11:00 then 11:00–12:00) are fine.
+
 | Role | Menu items (✅ = working) |
 |---|---|
-| Student | My Courses ✅, Assignments ✅, Grades ✅, Attendance ✅, Timetable, Profile ✅ |
-| Teacher | My Courses ✅, Assignments ✅, Grade Submissions ✅, Attendance ✅, Students ✅, Profile ✅ |
-| Admin | Manage Students ✅, Manage Teachers ✅, Manage Courses ✅, Reports, Settings, Profile ✅ |
+| Student | My Courses ✅, Assignments ✅, Grades ✅, Attendance ✅, Timetable ✅, Profile ✅ |
+| Teacher | My Courses ✅, Assignments ✅, Grade Submissions ✅, Attendance ✅, Students ✅, Timetable ✅, Profile ✅ |
+| Admin | Manage Students ✅, Manage Teachers ✅, Manage Courses ✅, Timetable ✅, Reports, Settings, Profile ✅ |
 
 ---
 
@@ -186,8 +201,10 @@ One screen shared by all three roles:
 8. Log in as **student**. **Assignments** shows `HW1` as *Graded* (Resubmit is disabled); **Grades** shows 8/10 (80%) and the course total. Log out.
 9. Log in as **teacher**. In **Attendance**, choose `CS101`, click **New Day** (today), untick `ravi`, click **Save**. `ravi` shows `0/1 (0%) - Below 75%`. Log out.
 10. Log in as **student**. **Attendance** shows `CS101` at 1/1 (100%), *OK*.
-11. Still as **student**, open **Profile**, change the password from `admin` to `stud123`, log out and log back in with `stud123`.
-12. Close the app and run it again. Everything is still there.
+11. Still as **student**, open **Profile**, change the password from `admin` to `stud123`, log out and log back in with `stud123`. Log out.
+12. Log in as **admin**. In **Timetable**, click **Add Slot**: `CS101`, Mon, 10:00, 2 hours, room `A1`. Try adding another class in `A1` on Mon at 11:00 and see it refused. Log out.
+13. Log in as **student** (password `stud123`). **Timetable** shows `CS101 (A1)` on Monday at 10:00 and 11:00.
+14. Close the app and run it again. Everything is still there.
 
 ---
 
@@ -218,7 +235,8 @@ lms/
 │   ├── LessonCompletion.java       # student completed a lesson
 │   ├── Assignment.java             # course, title, description, due date, max marks
 │   ├── Submission.java             # student's link + date, marks + feedback
-│   └── AttendanceRecord.java       # student present/absent in a course on a date
+│   ├── AttendanceRecord.java       # student present/absent in a course on a date
+│   └── TimetableSlot.java          # weekly class: course, day, start period, length, room
 ├── service/
 │   ├── Services.java               # creates all services around one DataStore
 │   ├── DataStore.java              # in-memory lists + load/save text files
@@ -228,7 +246,8 @@ lms/
 │   ├── CourseService.java          # courses + lessons, approval, YouTube check
 │   ├── EnrollmentService.java      # enrollments, completion, progress %
 │   ├── AssignmentService.java      # assignments, submissions, grading, status
-│   └── AttendanceService.java      # attendance days, present/absent, % and 75% warning
+│   ├── AttendanceService.java      # attendance days, present/absent, % and 75% warning
+│   └── TimetableService.java       # weekly slots, teacher/room clash checks, student clash warnings
 ├── ui/
 │   ├── AppWindow.java              # the JFrame + switching login ↔ dashboard
 │   ├── LoginScreen.java            # login form
@@ -248,7 +267,9 @@ lms/
 │       ├── TeacherAttendanceScreen.java
 │       ├── TeacherGradingScreen.java
 │       ├── TeacherStudentsScreen.java
+│       ├── TimetableScreen.java    # weekly grid, used for students and teachers
 │       ├── ManageCoursesScreen.java
+│       ├── ManageTimetableScreen.java
 │       ├── ManageUsersScreen.java  # used for both students and teachers
 │       └── ProfileScreen.java      # used for all three roles
 ├── data/                           # saved data (created on first run)
@@ -270,14 +291,16 @@ lms/
 | `model.Assignment` | `id`, `courseCode`, `title`, `description`, `dueDate` (`YYYY-MM-DD`), `maxMarks`. |
 | `model.Submission` | `assignmentId`, `studentUsername`, `link`, `submittedDate`, `marks` (`null` until graded), `feedback`. |
 | `model.AttendanceRecord` | `courseCode`, `studentUsername`, `date`, `present`. |
+| `model.TimetableSlot` | `id`, `courseCode`, `day` (`DayOfWeek`), `startPeriod` (1–8), `length` (hours), `room`. `covers(day, period)` and `overlaps(day, start, length)`. |
 | `service.DataStore` | Holds all lists in memory, loads them from `data/*.txt` on start and rewrites the files after every change. Seeds the demo users on first run. `clean()` strips tabs and line breaks from input so they can't break the file format. |
 | `service.AuthService` | `login(username, password)` returns the `User`, or `null`. The password is checked with `Passwords.matches`. |
 | `service.Passwords` | `hash` (random 16-byte salt + SHA-256, via `java.security`), `matches` (constant-time compare), `isHashed`. |
 | `service.UserService` | `getUsers(role)`, `findByUsername`, `addUser` (validation, auto IDs like `S2`, `T3`), `deleteUser` (cleans up related records), `changePassword`. |
-| `service.CourseService` | `create`, `getAll`, `getByTeacher`, `find`, `approve`, `delete` (removes the course's lessons, enrollments, completions, assignments, submissions and attendance too); `getLessons`, `addLesson`, `updateLesson`, `deleteLesson`; YouTube link check. |
+| `service.CourseService` | `create`, `getAll`, `getByTeacher`, `find`, `approve`, `delete` (removes the course's lessons, enrollments, completions, assignments, submissions, attendance and timetable slots too); `getLessons`, `addLesson`, `updateLesson`, `deleteLesson`; YouTube link check. |
 | `service.EnrollmentService` | `enroll`, `unenroll` (also clears that course's progress, submissions and attendance), `getStudentsIn`, `getCoursesFor` (approved courses only), `toggleComplete`, `isComplete`, `completedCount`, `percent`. |
 | `service.AssignmentService` | `getByCourse`, `getByTeacher`, `getForStudent` (approved courses only), `create`, `update`, `delete`; `submit` (create or resubmit until graded), `grade`, `findSubmission`, `getSubmissions`, `status` (Not submitted / Submitted / Late / Graded), `isLate`. |
 | `service.AttendanceService` | `getDays` (newest first), `find`, `saveDay` (date check, no future dates; adds or updates one record per student), `deleteDay`, `getRecords`, `presentCount`, `totalCount`, `percent`, `isLow` (below `THRESHOLD` = 75%). |
+| `service.TimetableService` | `getAll`, `getByCourse`, `getForStudent` (approved courses only), `getForTeacher`, `find`; `checkHard` (time within 09:00–17:00, room required, no teacher or room double-booking), `studentClashes` (warning list), `add`, `update`, `delete`; label helpers `periodLabel`, `timeRange`, `dayLabel`. |
 | `service.Services` | Builds one `DataStore` and all services on top of it, so the UI only needs to receive one object. |
 | `ui.AppWindow` | Owns the `JFrame` and the top-level `CardLayout` (login ↔ dashboard). |
 | `ui.DashboardFactory` | Builds the dashboard frame. Its content area uses a second `CardLayout`, with one card per working screen plus a "coming soon" placeholder. |
@@ -293,7 +316,7 @@ Services report bad input by throwing `IllegalArgumentException` with a readable
 |---|---|
 | **Abstraction** | `User` is an abstract class and `Screen` is an interface. The dashboard only knows "a `Screen`" and calls `refresh()` on it without knowing which screen it is. |
 | **Inheritance** | `Student`, `Teacher` and `Admin` extend `User`. |
-| **Polymorphism** | `user.getMenuItems()`, `user.getRole()` and `screen.refresh()` behave differently depending on the object. `ManageUsersScreen` is one class reused for two roles, and `ProfileScreen` one class for all three. |
+| **Polymorphism** | `user.getMenuItems()`, `user.getRole()` and `screen.refresh()` behave differently depending on the object. `ManageUsersScreen` and `TimetableScreen` are each one class reused for two roles, and `ProfileScreen` one class for all three. |
 | **Encapsulation** | All fields are `private`. The UI never touches the data lists or files; it goes through the services. |
 | **Composition** | `AppWindow` *has a* `JFrame`; `Services` *has a* `DataStore` shared by all services. |
 
@@ -312,12 +335,14 @@ Services report bad input by throwing `IllegalArgumentException` with a readable
  Lesson 1 ──── * LessonCompletion * ──── 1 Student
  Course 1 ──── * Assignment 1 ──── * Submission * ──── 1 Student
  Course 1 ──── * AttendanceRecord * ──── 1 Student
+ Course 1 ──── * TimetableSlot
  Course * ──── 1 Teacher (teacherUsername)
 
  ┌──────────── Services ─────────────┐
  │ AuthService   UserService          │
  │ CourseService EnrollmentService    │
- │ AssignmentService AttendanceService│──uses──▶ DataStore ──reads/writes──▶ data/*.txt
+ │ AssignmentService AttendanceService│
+ │ TimetableService   Passwords       │──uses──▶ DataStore ──reads/writes──▶ data/*.txt
  └────────────────────────────────────┘
           ▲
           │ uses
@@ -332,8 +357,11 @@ Services report bad input by throwing `IllegalArgumentException` with a readable
                                                           ├── TeacherAttendanceScreen
                                                           ├── TeacherGradingScreen
                                                           ├── TeacherStudentsScreen
+                                                          ├── TimetableScreen
                                                           ├── ManageCoursesScreen
-                                                          └── ManageUsersScreen
+                                                          ├── ManageTimetableScreen
+                                                          ├── ManageUsersScreen
+                                                          └── ProfileScreen
 ```
 
 ### Screen switching (two levels of `CardLayout`)
@@ -372,6 +400,7 @@ Logout ──▶ AppWindow.showLogin()
 | `assignments.txt` | id, courseCode, title, description, dueDate, maxMarks |
 | `submissions.txt` | assignmentId, studentUsername, link, submittedDate, marks (empty until graded), feedback |
 | `attendance.txt` | courseCode, studentUsername, date, present (`true`/`false`) |
+| `timetable.txt` | id, courseCode, day (`MONDAY`…`SATURDAY`), startPeriod (1–8), length, room |
 
 - Missing files are treated as empty. If `users.txt` is missing, the three demo users are created.
 - Lines with the wrong number of columns are skipped.
@@ -379,7 +408,7 @@ Logout ──▶ AppWindow.showLogin()
 
 | Delete… | Also removes |
 |---|---|
-| Course | its lessons, enrollments, completions of its lessons, its assignments and their submissions, its attendance |
+| Course | its lessons, enrollments, completions of its lessons, its assignments and their submissions, its attendance, its timetable slots |
 | Lesson | completions of that lesson |
 | Assignment | its submissions |
 | Student | their enrollments, completions, submissions and attendance |
@@ -451,12 +480,14 @@ These phases are a proposal. We will adjust them as we decide on features.
 - ✅ **Assignments & Grades** (teacher creates and grades assignments, student submits a link and sees grades).
 - ✅ **Attendance** (teacher ticks present/absent per day, student sees % per course with a warning below 75%).
 - ✅ **Profile** (details, role summary, change password; also added to the Admin menu).
-- ⬜ Timetable, Reports, Settings.
+- ✅ **Timetable** (admin schedules weekly slots with clash checks; students and teachers see a weekly grid).
+- ⬜ Reports, Settings.
 
 ### Phase 4: Data persistence 🟡 *(in progress)*
-- ✅ Text-file storage via `DataStore` for users, courses, lessons, enrollments, completions, assignments, submissions and attendance.
+- ✅ Text-file storage via `DataStore` for users, courses, lessons, enrollments, completions, assignments, submissions, attendance and timetable slots.
 - ✅ `attendance.txt` for attendance.
-- ⬜ Add a file for each new model as features arrive (timetable…).
+- ✅ `timetable.txt` for the timetable.
+- ⬜ Add a file for each new model as features arrive (settings…).
 - If the course allows it later, a database (JDBC) could replace the files.
 
 ### Phase 5: Real authentication ✅ *(done)*
@@ -481,7 +512,7 @@ Candidate features for the remaining menu items. We haven't committed to any of 
 | Assignments | ✅ Done (submit a link, resubmit until graded) |
 | Grades | ✅ Done (marks per assignment + course totals) |
 | Attendance | ✅ Done (% per course, warning below 75%) |
-| Timetable | Weekly class schedule. |
+| Timetable | ✅ Done (weekly grid of enrolled courses) |
 | Profile | ✅ Done (details, summary, change password) |
 
 ### Teacher
@@ -492,6 +523,7 @@ Candidate features for the remaining menu items. We haven't committed to any of 
 | Grade Submissions | ✅ Done (open link, marks + feedback) |
 | Attendance | ✅ Done (tick present per day, edit past days) |
 | Students | ✅ Done (progress per course) |
+| Timetable | ✅ Done (weekly grid of own courses) |
 | Profile | ✅ Done (details, summary, change password) |
 
 ### Admin
@@ -500,6 +532,7 @@ Candidate features for the remaining menu items. We haven't committed to any of 
 | Manage Students | ✅ Add / delete. Later: edit, reset password. |
 | Manage Teachers | ✅ Add / delete. Later: edit, reassign courses to another teacher. |
 | Manage Courses | ✅ Done. Later: edit course details. |
+| Timetable | ✅ Done (schedule slots, teacher/room clash checks, student clash warnings) |
 | Reports | Summary counts (students, teachers, courses), completion and grade overviews. |
 | Settings | System settings (e.g. academic term), reset passwords. |
 
