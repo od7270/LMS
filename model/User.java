@@ -4,13 +4,15 @@ public abstract class User {
     private final String id;
     private final String name;
     private final String username;
-    private final String password;
+    private String passwordHash;
 
-    public User(String id, String name, String username, String password) {
+    // passwordHash is a salted hash made by service.Passwords (or a plain password from an old file,
+    // which DataStore hashes on load)
+    public User(String id, String name, String username, String passwordHash) {
         this.id = id;
         this.name = name;
         this.username = username;
-        this.password = password;
+        this.passwordHash = passwordHash;
     }
 
     public String getId() {
@@ -25,13 +27,13 @@ public abstract class User {
         return username;
     }
 
-    // Used only by DataStore to save users; the UI should use checkPassword()
-    public String getPassword() {
-        return password;
+    // Used by DataStore to save users and by AuthService/UserService to check passwords
+    public String getPasswordHash() {
+        return passwordHash;
     }
 
-    public boolean checkPassword(String password) {
-        return this.password.equals(password);
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
     }
 
     public abstract Role getRole();

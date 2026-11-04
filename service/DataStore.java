@@ -106,10 +106,22 @@ public class DataStore {
         }
 
         if (users.isEmpty()) {
-            // First run: create the demo accounts
-            users.add(new Student("S1", "Student", "student", "admin"));
-            users.add(new Teacher("T1", "Teacher", "teacher", "admin"));
-            users.add(new Admin("A1", "Admin", "admin", "admin"));
+            // First run: create the demo accounts (password "admin")
+            users.add(new Student("S1", "Student", "student", Passwords.hash("admin")));
+            users.add(new Teacher("T1", "Teacher", "teacher", Passwords.hash("admin")));
+            users.add(new Admin("A1", "Admin", "admin", Passwords.hash("admin")));
+            save();
+        }
+
+        // Files from before hashing hold plain passwords: hash them once and save
+        boolean migrated = false;
+        for (User user : users) {
+            if (!Passwords.isHashed(user.getPasswordHash())) {
+                user.setPasswordHash(Passwords.hash(user.getPasswordHash()));
+                migrated = true;
+            }
+        }
+        if (migrated) {
             save();
         }
     }
@@ -117,7 +129,7 @@ public class DataStore {
     public void save() {
         List<String> lines = new ArrayList<>();
         for (User u : users) {
-            lines.add(join(u.getRole().name(), u.getId(), u.getName(), u.getUsername(), u.getPassword()));
+            lines.add(join(u.getRole().name(), u.getId(), u.getName(), u.getUsername(), u.getPasswordHash()));
         }
         write("users.txt", lines);
 
@@ -167,14 +179,14 @@ public class DataStore {
         write("attendance.txt", lines);
     }
 
-    public static User createUser(Role role, String id, String name, String username, String password) {
+    public static User createUser(Role role, String id, String name, String username, String passwordHash) {
         switch (role) {
             case STUDENT:
-                return new Student(id, name, username, password);
+                return new Student(id, name, username, passwordHash);
             case TEACHER:
-                return new Teacher(id, name, username, password);
+                return new Teacher(id, name, username, passwordHash);
             default:
-                return new Admin(id, name, username, password);
+                return new Admin(id, name, username, passwordHash);
         }
     }
 

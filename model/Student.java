@@ -1,8 +1,8 @@
 package model;
 
 public class Student extends User {
-    public Student(String id, String name, String username, String password) {
-        super(id, name, username, password);
+    public Student(String id, String name, String username, String passwordHash) {
+        super(id, name, username, passwordHash);
     }
 
     @Override

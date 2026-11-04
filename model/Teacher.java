@@ -1,8 +1,8 @@
 package model;
 
 public class Teacher extends User {
-    public Teacher(String id, String name, String username, String password) {
-        super(id, name, username, password);
+    public Teacher(String id, String name, String username, String passwordHash) {
+        super(id, name, username, passwordHash);
     }
 
     @Override

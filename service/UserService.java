@@ -47,7 +47,7 @@ public class UserService {
             throw new IllegalArgumentException("Username '" + username + "' is already taken.");
         }
 
-        store.getUsers().add(DataStore.createUser(role, nextId(role), name, username, password));
+        store.getUsers().add(DataStore.createUser(role, nextId(role), name, username, Passwords.hash(password)));
         store.save();
     }
 
